@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Zevkini Öğreniyoruz... 🤖
+        </h2>
+        <p class="mt-2 text-center text-sm text-gray-600">
+            Karşına çıkan etkinlikleri beğen ya da geç. Böylece sana daha akıllı öneriler sunabiliriz.
+        </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative">
+        <!-- Card Container -->
+        <div id="card-container" class="relative h-[500px] w-full">
+            <!-- Cards will be injected here -->
+            <div id="loading"
+                class="absolute inset-0 flex items-center justify-center bg-white rounded-2xl shadow-lg border border-gray-100">
+                <div class="animate-spin text-4xl">🧘</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex justify-center gap-8 mt-8">
+            <button onclick="handleSwipe('dislike')"
+                class="p-4 bg-white rounded-full shadow-lg text-red-500 hover:bg-red-50 transition transform hover:scale-110 active:scale-95 border border-gray-100">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+            <button onclick="handleSwipe('like')"
+                class="p-4 bg-white rounded-full shadow-lg text-green-500 hover:bg-green-50 transition transform hover:scale-110 active:scale-95 border border-gray-100">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z">
+                    </path>
+                </svg>
+            </button>
+        </div>
+
+        <div class="mt-8 text-center">
+            <a href="/dashboard" class="text-sm font-medium text-gray-400 hover:text-gray-600">Bu adımı atla ➔</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    let events = [];
+    let currentIndex = 0;
+
+    async function initQuiz() {
+        try {
+            const res = await fetch('/api/events');
+            const data = await res.json();
+            events = Array.isArray(data) ? data : (data.items || []);
+
+            // Randomize array
+            events.sort(() => Math.random() - 0.5);
+
+            if (events.length > 0) {
+                renderCard();
+            } else {
+                window.location.href = '/dashboard';
+            }
+        } catch (e) {
+            console.error(e);
+            window.location.href = '/dashboard';
+        }
+    }
+
+    function renderCard() {
+        const container = document.getElementById('card-container');
+        if (currentIndex >= events.length || currentIndex >= 10) { // Limit to 10
+            finishQuiz();
+            return;
+        }
+
+        const event = events[currentIndex];
+        const imageUrl = event.poster_url || event.image || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=500&q=60';
+        const price = 0; // Removed price
+
+        container.innerHTML = `
+            <div id="current-card" class="absolute inset-0 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden transform transition-all duration-300">
+                <div class="h-3/5 bg-gray-200 relative">
+                    <img src="${imageUrl}" class="w-full h-full object-cover">
+                    <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                        <span class="inline-block px-2 py-1 bg-white/20 backdrop-blur-md text-white text-xs font-bold rounded-lg border border-white/30">
+                            ${event.category && event.category.name ? event.category.name : 'Etkinlik'}
+                        </span>
+                    </div>
+                </div>
+                <div class="p-6 flex flex-col h-2/5 justify-between">
+                    <div>
+                        <h3 class="text-2xl font-black text-gray-900 leading-tight mb-2">${event.name}</h3>
+                        <p class="text-gray-500 text-sm line-clamp-2">
+                            📍 ${event.venue && event.venue.name ? event.venue.name : 'Mekan Belirsiz'}
+                        </p>
+                    </div>
+                    <div>
+                        <!-- Price Removed -->
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async function handleSwipe(action) {
+        const card = document.getElementById('current-card');
+        if (!card) return;
+
+        const event = events[currentIndex];
+
+        // Visual Animation
+        card.style.transform = action === 'like' ? 'translate(150%, 20px) rotate(20deg)' : 'translate(-150%, 20px) rotate(-20deg)';
+        card.style.opacity = '0';
+
+        // Send Interaction
+        try {
+            fetch('/api/interact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event_id: event.id, action: action })
+            });
+        } catch (e) { console.error(e) }
+
+        // Next Card
+        currentIndex++;
+        setTimeout(renderCard, 200);
+    }
+
+    function finishQuiz() {
+        const container = document.getElementById('card-container');
+        container.innerHTML = `
+            <div class="absolute inset-0 flex flex-col items-center justify-center bg-white rounded-3xl text-center p-8">
+                <div class="text-5xl mb-4">🎉</div>
+                <h3 class="text-2xl font-bold text-gray-900">Harika!</h3>
+                <p class="text-gray-500 mt-2">Senin için en iyi etkinlikleri hazırladık.</p>
+                <a href="/dashboard" class="mt-8 w-full bg-black text-white py-4 rounded-xl font-bold shadow-lg hover:bg-gray-800 transition">
+                    Keşfetmeye Başla
+                </a>
+            </div>
+        `;
+    }
+
+    document.addEventListener('DOMContentLoaded', initQuiz);
+</script>
+{% endblock %}

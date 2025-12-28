@@ -1,0 +1,730 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Filters & Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <h2 class="text-2xl font-black text-primary font-display tracking-tight">Tüm Etkinlikler</h2>
+            <p class="text-slate-500 font-medium">Şehrindeki en popüler etkinlikleri keşfet.</p>
+        </div>
+    </div>
+
+    <!-- Smart Pair BAR Widget -->
+    <div id="smart-pair-section" class="mb-12 {% if not pair %}hidden{% endif %}">
+        <div
+            class="bg-white dark:bg-slate-800 rounded-3xl p-1 shadow-glow border border-blue-100 dark:border-indigo-900/50 relative overflow-hidden">
+            <div
+                class="bg-gradient-to-br from-white to-blue-50/50 dark:from-slate-800 dark:to-indigo-950/30 rounded-[22px] p-6 md:p-8">
+
+                <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                    <!-- Intro -->
+                    <div class="flex flex-col items-start md:w-1/4">
+                        <div
+                            class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-1.5 rounded-full shadow-lg shadow-blue-200 dark:shadow-none mb-4 ring-1 ring-white/50">
+                            <span class="text-sm">✨</span>
+                            <span
+                                class="text-[10px] font-black text-white uppercase tracking-widest drop-shadow-sm">Powered
+                                by Gemini AI</span>
+                        </div>
+                        <h2 class="text-2xl font-black text-gray-900 dark:text-white leading-tight mb-3">Şanslı İkili
+                        </h2>
+
+                        <div class="mb-6">
+                            <!-- Theme Badge -->
+                            <div id="pair-theme-badge"
+                                class="hidden mb-3 inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-black px-3 py-1 rounded-md shadow-md">
+                                KONSEPT
+                            </div>
+
+                            <button onclick="openReasonModal()"
+                                class="w-full group relative overflow-hidden text-xs font-bold text-white bg-slate-900 dark:bg-black px-4 py-2 rounded-xl transition-all hover:scale-105 hover:shadow-xl flex items-center justify-center gap-2 mb-2">
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                </div>
+                                <span class="relative text-blue-300 group-hover:text-white transition-colors">⚡</span>
+                                <span class="relative z-10">AI Analizini Gör</span>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-3 w-full">
+                            <button onclick="rollDice()" id="dice-btn"
+                                class="flex-1 flex items-center justify-center gap-2 bg-gray-900 dark:bg-slate-700 text-white px-4 py-3 rounded-xl hover:bg-black dark:hover:bg-slate-600 transition active:scale-95 shadow-lg group">
+                                <span class="text-xl group-hover:rotate-180 transition-transform duration-500">🎲</span>
+                                <span class="text-sm font-bold">Yenile</span>
+                            </button>
+
+                            <button onclick="savePlan()" id="save-btn"
+                                class="flex-none flex items-center justify-center gap-2 bg-indigo-500 text-white px-4 py-3 rounded-xl hover:bg-indigo-600 transition active:scale-95 shadow-lg shadow-indigo-500/30 group"
+                                title="Planı Kaydet">
+                                <span class="text-xl">💾</span>
+                            </button>
+
+                            <button onclick="sharePair()" id="share-btn"
+                                class="flex-none flex items-center justify-center gap-2 bg-green-500 text-white px-4 py-3 rounded-xl hover:bg-green-600 transition active:scale-95 shadow-lg shadow-green-500/30 group"
+                                title="Paylaş">
+                                <span class="text-xl group-hover:scale-110 transition-transform">📲</span>
+                            </button>
+                        </div>
+
+                        <div id="save-toast"
+                            class="hidden mt-2 text-center text-sm font-bold text-green-600 bg-green-50 py-2 rounded-lg border border-green-200">
+                            ✅ Plan Kaydedildi!
+                        </div>
+                    </div>
+
+                    <!-- Events Render -->
+                    <div class="flex-grow flex flex-col md:flex-row gap-4 w-full md:w-auto items-stretch">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative w-full">
+                            <!-- Connector Line for Desktop -->
+                            <div
+                                class="hidden md:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+                                <div id="match-score-circle"
+                                    class="w-16 h-16 bg-white dark:bg-slate-800 rounded-full flex flex-col items-center justify-center shadow-xl font-black text-primary dark:text-indigo-400 border-4 border-primary dark:border-indigo-400 text-xs transform hover:scale-110 transition cursor-help"
+                                    title="Uyum Skoru">
+                                    <span class="text-lg leading-none" id="match-score-val">--</span>
+                                    <span class="text-[0.6rem] uppercase tracking-tighter opacity-70">Uyum</span>
+                                </div>
+                            </div>
+
+                            {% for event in pair %}
+                            {% set idx = loop.index %}
+                            {% set imageUrl = event.poster_url or event.image or
+                            'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=500&q=60'
+                            %}
+                            {% set priceVal = event.ticket_price|default(0)|float %}
+                            <div id="pair-slot-{{ idx }}"
+                                class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-xl border border-blue-100 dark:border-slate-700 flex gap-4 items-center hover:scale-[1.02] transition duration-300 group z-10">
+                                <div
+                                    class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-slate-700 relative shadow-sm">
+                                    <img src="{{ imageUrl }}"
+                                        class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
+                                </div>
+                                <div class="flex-grow min-w-0">
+                                    <div
+                                        class="text-[10px] text-secondary font-bold uppercase tracking-wider mb-1 truncate">
+                                        {{ event.category.name if event.category and event.category.name else 'Öneri' }}
+                                    </div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-lg leading-tight line-clamp-2 mb-2 font-display"
+                                        title="{{ event.name }}">
+                                        {{ event.name }}
+                                    </h4>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <a href="{{ event.ticket_url or event.url or '#' }}" target="_blank"
+                                            class="text-xs font-bold bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-md shadow-indigo-200 dark:shadow-none">
+                                            Bilet Al
+                                        </a>
+                                        <a href="/community?event_name={{ event.name }}&event_id={{ event.id }}"
+                                            class="text-gray-400 hover:text-secondary transition p-2 rounded-lg hover:bg-orange-50 dark:hover:bg-slate-700"
+                                            title="Yorum Yap">
+                                            💬
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Filters Info -->
+    <div class="flex gap-4 mb-6 overflow-x-auto pb-2">
+
+        <div
+            class="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-full px-4 py-1 text-sm font-medium shadow-sm text-gray-700 dark:text-gray-300">
+            Sıklık: <span class="text-secondary">{{ user.frequency }}</span>
+        </div>
+        {% for interest in user.interests_list %}
+        {% set is_active = request.args.get('filter') == interest %}
+        <div
+            class="group flex items-center border rounded-full pl-4 pr-1 py-1 text-sm font-medium transition hover:shadow-sm {{ 'bg-indigo-600 border-indigo-600 text-white' if is_active else 'bg-blue-50 dark:bg-indigo-900/30 border-blue-100 dark:border-indigo-800 text-blue-700 dark:text-indigo-300' }}">
+            <a href="{{ '/dashboard' if is_active else '?filter=' + interest }}"
+                class="hover:underline cursor-pointer mr-2 {{ 'text-white' if is_active else '' }}"
+                title="{{ interest|capitalize }} {{ 'filtresini kaldır' if is_active else 'filtrele' }}">
+                {{ interest|capitalize }}
+                {% if is_active %} (Kaldır) {% endif %}
+            </a>
+            <button onclick="removeInterest('{{ interest }}')"
+                class="p-1 rounded-full transition {{ 'text-indigo-200 hover:text-white hover:bg-white/20' if is_active else 'text-blue-400 hover:text-red-500 hover:bg-blue-200 dark:hover:bg-indigo-800' }}"
+                title="İlgi Alanını Sil">
+                ✕
+            </button>
+        </div>
+        {% endfor %}
+        <div class="ml-auto">
+            {% if request.args.get('filter') %}
+            <a href="/dashboard" class="text-sm text-red-500 font-bold hover:underline">Filtreyi Temizle</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        async function removeInterest(interest) {
+            if (!confirm(interest + ' ilgi alanını silmek istiyor musun?')) return;
+            try {
+                await fetch('/api/user/remove_interest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ interest })
+                });
+                window.location.reload();
+            } catch (e) { alert('Hata oluştu'); }
+        }
+    </script>
+
+    <!-- Skeleton Loader (Shown while fetching) -->
+    <div id="events-loader" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
+        {% for i in range(6) %}
+        <div
+            class="bg-white dark:bg-slate-800 rounded-3xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm animate-pulse">
+            <div class="h-48 bg-slate-200 dark:bg-slate-700 rounded-2xl mb-4"></div>
+            <div class="flex gap-2 mb-3">
+                <div class="h-6 w-20 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+            </div>
+            <div class="h-8 w-3/4 bg-slate-200 dark:bg-slate-700 rounded-lg mb-2"></div>
+            <div class="h-4 w-1/2 bg-slate-200 dark:bg-slate-700 rounded-lg mb-6"></div>
+            <div class="flex justify-between items-center mt-auto border-t border-slate-100 dark:border-slate-800 pt-4">
+                <div class="flex gap-2">
+                    <div class="h-10 w-10 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                    <div class="h-10 w-10 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                </div>
+                <div class="h-10 w-24 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Events Grid (SSR) -->
+    <div id="events-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% if not events %}
+        <div id="no-events"
+            class="col-span-full text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100 dark:bg-slate-800 dark:border-slate-700">
+            <div class="text-4xl mb-4">😔</div>
+            <p class="text-gray-500 text-lg">Kriterlerine uygun etkinlik bulunamadı.</p>
+            <button onclick="window.location.href='/explore'"
+                class="mt-4 text-primary dark:text-indigo-400 font-medium hover:underline">Keşfet
+                sayfasına göz at</button>
+        </div>
+        {% else %}
+        {% for event in events %}
+        {% set imageUrl = event.poster_url or event.image or
+        'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=500&q=60'
+        %}
+        {% set dateStr = event.start if event.start else 'Tarih Belirsiz' %}
+        {% set ticketUrl = event.ticket_url or event.url or '#' %}
+
+        <div
+            class="group relative bg-white dark:bg-slate-800 rounded-3xl p-3 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 dark:border-slate-700/50 flex flex-col h-full">
+
+            <div class="relative h-56 rounded-2xl overflow-hidden mb-4">
+                <img src="{{ imageUrl }}" alt="{{ event.name }}"
+                    class="w-full h-full object-cover transform group-hover:scale-110 transition duration-700">
+                <div
+                    class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition">
+                </div>
+                <div
+                    class="absolute top-3 right-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur text-xs font-bold px-3 py-1.5 rounded-lg text-slate-800 dark:text-indigo-300 shadow-sm">
+                    {{ event.category.name if event.category and event.category.name else 'Etkinlik' }}
+                </div>
+                <div class="absolute bottom-3 left-3 flex items-center gap-2">
+                    <span
+                        class="bg-white/90 dark:bg-slate-900/90 backdrop-blur text-slate-800 dark:text-white px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
+                        📅 {{ dateStr }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="px-2 flex-grow flex flex-col">
+                <h3
+                    class="text-xl font-black text-slate-900 dark:text-white mb-2 leading-tight line-clamp-2 group-hover:text-primary dark:group-hover:text-indigo-400 transition-colors font-display">
+                    {{ event.name }}
+                </h3>
+
+                <p
+                    class="text-slate-500 dark:text-slate-400 text-sm mb-4 line-clamp-1 flex items-center gap-1.5 font-medium">
+                    <span class="text-secondary">📍</span>
+                    {{ event.venue.name if event.venue and event.venue.name else 'Mekan Belirsiz' }}
+                </p>
+
+                <div
+                    class="mt-auto pt-4 border-t border-slate-50 dark:border-slate-700/50 flex items-center justify-between gap-3">
+                    <div class="flex gap-1">
+                        <button onclick="interact('{{ event.id }}', 'like', this)"
+                            class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-slate-400 hover:bg-green-100 hover:text-green-600 transition"
+                            title="Beğen">👍</button>
+                        <button onclick="interact('{{ event.id }}', 'dislike', this)"
+                            class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-slate-400 hover:bg-red-100 hover:text-red-600 transition"
+                            title="İlgilenmiyorum">👎</button>
+                        <button onclick="addToCalendar('{{ event.id }}', this)"
+                            class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-indigo-500 hover:bg-indigo-100 hover:text-indigo-700 transition"
+                            title="Takvime Ekle">📅</button>
+                    </div>
+
+                    <a href="{{ ticketUrl }}" target="_blank"
+                        class="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-center py-2.5 rounded-xl text-sm font-bold hover:scale-105 transition shadow-lg hover:shadow-indigo-500/20">
+                        Bilet Al
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Hidden Data for JS -->
+    <div id="user-prefs" data-budget="{{ user.budget }}" data-interests='{{ user.interests }}'>
+    </div>
+
+
+    <!-- AI Details Modal -->
+    <div id="ai-modal" class="fixed inset-0 z-50 hidden relative" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-900/60 transition-opacity backdrop-blur-sm" onclick="closeReasonModal()">
+        </div>
+
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                <!-- Modal Panel -->
+                <div
+                    class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-slate-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-white/40 dark:border-slate-700 ring-1 ring-black/5">
+
+                    <!-- Gradient Top Border -->
+                    <div
+                        class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 px-6 pb-6 pt-6">
+                        <div class="flex flex-col items-center">
+                            <div
+                                class="mx-auto flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-slate-800 mb-4 ring-4 ring-blue-50/50 dark:ring-slate-700/50">
+                                <span class="text-2xl">✨</span>
+                            </div>
+                            <div class="text-center w-full">
+                                <h3 class="text-xl font-black text-gray-900 dark:text-white mb-1" id="modal-title">
+                                    Gemini AI Analizi
+                                </h3>
+                                <p class="text-sm text-gray-400 font-medium mb-6">Senin için seçilen
+                                    ikilinin detayı</p>
+
+                                <div
+                                    class="text-left bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5 shadow-inner">
+                                    <div id="ai-reason-text"
+                                        class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-line font-sans">
+                                        {{ reason if reason else '> 📡 Veri seti analiz ediliyor...'
+                                        }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-gray-50/80 dark:bg-slate-900/80 px-6 py-4 flex flex-row-reverse border-t border-gray-100 dark:border-slate-800">
+                        <button type="button"
+                            class="inline-flex w-full justify-center rounded-xl bg-slate-900 dark:bg-white px-5 py-3 text-sm font-bold text-white dark:text-slate-900 shadow-lg hover:bg-black dark:hover:bg-slate-200 hover:scale-[1.02] transition-all sm:w-auto"
+                            onclick="closeReasonModal()">
+                            Anlaşıldı, Teşekkürler
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Read data safely from DOM
+        const prefs = document.getElementById('user-prefs').dataset;
+        window.userBudget = parseFloat(prefs.budget) || 0;
+
+        try {
+            window.userInterests = JSON.parse(prefs.interests);
+        } catch (e) {
+            console.warn("Failed to parse interests", e);
+            window.userInterests = [];
+        }
+
+        fetchWeather();
+        // fetchEvents() and fetchSmartPair() are removed as initial rendering is done via Jinja (SSR)
+    });
+
+    async function fetchSmartPair() {
+        const section = document.getElementById('smart-pair-section');
+        try {
+            const res = await fetch('/api/recommend_pair');
+            if (res.status !== 200) {
+                section.classList.add('hidden'); // Hide if error or too few events
+                return;
+            }
+
+            section.classList.remove('hidden');
+            const data = await res.json();
+
+            // Update user budget global
+            // window.userBudget is used elsewhere
+
+            // Show reason
+            const reasonEl = document.getElementById('ai-reason-text');
+
+            if (data.reason && reasonEl) {
+                // If markdown parsing is needed later, add here. For now raw text is fine.
+                reasonEl.innerText = data.reason;
+            }
+
+            renderPair(data.pair);
+
+            // Store alternates for dice logic (optional simple client-side toggle or re-fetch)
+            // For true random, we'll just re-fetch on dice click.
+
+        } catch (e) {
+            console.log("Smart pair disabled:", e);
+            section.classList.add('hidden');
+        }
+    }
+
+    async function rollDice() {
+        const btn = document.getElementById('dice-btn');
+        const icon = btn.querySelector('span');
+
+        // Animation: spin for at least 600ms or until fetch is done
+        icon.classList.add('animate-spin');
+
+        // Hide reason on roll
+        const container = document.getElementById('pair-reason-container');
+        if (container) container.classList.add('hidden');
+
+        try {
+            // Artificial delay to let animation run a bit even if fetch is fast
+            const minWait = new Promise(r => setTimeout(r, 600));
+            const fetchReq = fetchSmartPair();
+
+            await Promise.all([minWait, fetchReq]);
+        } finally {
+            icon.classList.remove('animate-spin');
+        }
+    }
+
+    async function savePlan() {
+        if (!window.currentPair || window.currentPair.length < 2) return;
+
+        const btn = document.getElementById('save-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="animate-spin">⏳</span>'; // Simple loading
+
+        try {
+            const res = await fetch('/api/save_plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    event_1_id: window.currentPair[0].id,
+                    event_2_id: window.currentPair[1].id,
+                    theme: window.currentPair[0].pair_theme || 'Özel Plan'
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const toast = document.getElementById('save-toast');
+                toast.classList.remove('hidden');
+                toast.innerText = data.message || '✅ Plan Kaydedildi!';
+
+                setTimeout(() => toast.classList.add('hidden'), 5000); // Longer wait for reading
+                btn.innerHTML = '<span class="text-xl">✅</span>';
+            } else {
+                alert("Kaydederken bir sorun oluştu.");
+                btn.innerHTML = '<span class="text-xl">💾</span>';
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Hata oluştu.");
+            btn.innerHTML = '<span class="text-xl">💾</span>';
+        }
+
+        setTimeout(() => {
+            btn.disabled = false;
+            if (btn.innerHTML.includes('✅')) btn.innerHTML = '<span class="text-xl">💾</span>';
+        }, 3000);
+    }
+
+    function sharePair() {
+        // Collect event names from the DOM
+        const titles = [];
+        document.querySelectorAll('[id^="pair-slot-"] h4').forEach(h4 => {
+            if (h4.innerText) titles.push(h4.innerText);
+        });
+
+        if (titles.length < 2) {
+            alert("Önce etkinlikleri bulmamız lazım! 🎲");
+            return;
+        }
+
+        const text = `Hey! BiletWep'ten bize harika bir plan buldum:\n\n🎉 ${titles[0]}\n➕\n🎭 ${titles[1]}\n\nBu ikiliye ne dersin? Gidelim mi? 👯‍♀️🔥\nhttps://biletwep.com`;
+
+        // Use whatsapp:// protocol for mobile deep link, or web.whatsapp for desktop fallback usually handled by browser
+        const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+    }
+
+    function renderPair(pair) {
+        if (!pair || pair.length < 2) return;
+        window.currentPair = pair; // CRITICAL: Store for savePlan
+
+
+        let total = 0;
+
+        pair.forEach((event, idx) => {
+            const slot = document.getElementById(`pair-slot-${idx + 1}`);
+
+            const imageUrl = event.poster_url || event.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=500&q=60';
+
+            // Removed priceLogic
+
+            slot.innerHTML = `
+                <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-slate-700 relative group-hover:shadow-md transition">
+                    <img src="${imageUrl}" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-grow flex flex-col justify-between overflow-hidden">
+                    <div>
+                         <div class="flex justify-between items-start">
+                             <div class="text-[10px] text-orange-600 dark:text-orange-400 font-bold uppercase tracking-wider mb-0.5">
+                                ${event.category && event.category.name ? event.category.name : 'Öneri'}
+                            </div>
+                         </div>
+                        <h4 class="font-bold text-gray-800 dark:text-white text-sm leading-tight line-clamp-1" title="${event.name}">${event.name}</h4>
+                    </div>
+                    <div class="flex items-center justify-end mt-1">
+                        <!-- Removed Price Span -->
+                        <div class="flex items-center gap-2">
+                             <!-- Interactions -->
+                             <button onclick="interact('${event.id}', 'like', this)" class="bg-gray-50 dark:bg-slate-700 text-gray-400 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 p-1 rounded-lg transition border border-gray-100 dark:border-slate-600" title="Beğen">👍</button>
+                             <button onclick="interact('${event.id}', 'dislike', this)" class="bg-gray-50 dark:bg-slate-700 text-gray-400 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 p-1 rounded-lg transition border border-gray-100 dark:border-slate-600" title="İlgilenmiyorum">👎</button>
+                             
+                             <button onclick="event.stopPropagation(); window.addToCalendar('${event.id}', this)" class="relative z-50 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 p-1 min-w-[32px] rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition text-sm cursor-pointer" title="Takvime Ekle">📅</button>
+
+                             <a href="/community?event_name=${encodeURIComponent(event.name)}&event_id=${event.id}" class="text-xs font-bold text-gray-400 hover:text-blue-500 dark:hover:text-blue-400" title="Toplulukta Paylaş">📢</a>
+                             <a href="${event.ticket_url || event.url}" target="_blank" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center">
+                                Git ↗
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Update Total
+        // const totalEl = document.getElementById('pair-total-price');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Read data safely from DOM
+        const prefs = document.getElementById('user-prefs').dataset;
+        window.userBudget = parseFloat(prefs.budget) || 0;
+
+        try {
+            window.userInterests = JSON.parse(prefs.interests);
+        } catch (e) {
+            console.warn("Failed to parse interests", e);
+            window.userInterests = [];
+        }
+
+        fetchWeather();
+        fetchEvents();
+        fetchSmartPair();
+    });
+
+
+
+    async function fetchEvents() {
+        try {
+            const grid = document.getElementById('events-grid');
+            const loader = document.getElementById('events-loader');
+
+            // Show Loader initially in pure client calls if grid is empty
+            if (loader && grid.children.length === 0) loader.classList.remove('hidden');
+
+            const res = await fetch('/api/events');
+            const events = await res.json();
+
+            // Handle pagination wrapper if exists
+            const eventList = Array.isArray(events) ? events : (events.items || []);
+
+            if (loader) loader.classList.add('hidden');
+
+            if (eventList.length === 0) {
+                const noEvents = document.getElementById('no-events');
+                if (noEvents) {
+                    noEvents.classList.remove('hidden');
+                    noEvents.querySelector('p').innerText = "Kriterlerine uygun etkinlik bulunamadı.";
+                }
+                return;
+            }
+
+            let shownCount = 0;
+
+            eventList.forEach(event => {
+                if (false) return; // Removed price filter
+
+                // Render Card
+                const card = document.createElement('div');
+                card.className = "group relative bg-white dark:bg-slate-800 rounded-3xl p-3 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 dark:border-slate-700/50 flex flex-col h-full opacity-0 fill-mode-forwards animate-fade-in-up";
+                card.style.animationDelay = `${shownCount * 50}ms`;
+
+                const imageUrl = event.poster_url || event.image || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=500&q=60';
+                const dateStr = event.start ? new Date(event.start).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' }) : 'Tarih Belirsiz';
+
+                const ticketUrl = event.ticket_url || event.url || '#';
+
+                card.innerHTML = `
+                   <div class="relative h-56 rounded-2xl overflow-hidden mb-4">
+                        <img src="${imageUrl}" alt="${event.name}" class="w-full h-full object-cover transform group-hover:scale-110 transition duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition"></div>
+                        <div class="absolute top-3 right-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur text-xs font-bold px-3 py-1.5 rounded-lg text-slate-800 dark:text-indigo-300 shadow-sm">
+                            ${event.category && event.category.name ? event.category.name : 'Etkinlik'}
+                        </div>
+                        <div class="absolute bottom-3 left-3 flex items-center gap-2">
+                            <span class="bg-white/90 dark:bg-slate-900/90 backdrop-blur text-slate-800 dark:text-white px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
+                                📅 ${dateStr}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="px-2 flex-grow flex flex-col">
+                        <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2 leading-tight line-clamp-2 group-hover:text-primary dark:group-hover:text-indigo-400 transition-colors font-display">
+                            ${event.name}
+                        </h3>
+
+                        <p class="text-slate-500 dark:text-slate-400 text-sm mb-4 line-clamp-1 flex items-center gap-1.5 font-medium">
+                            <span class="text-secondary">📍</span>
+                            ${event.venue && event.venue.name ? event.venue.name : 'Mekan Belirsiz'}
+                        </p>
+
+                        <div class="mt-auto pt-4 border-t border-slate-50 dark:border-slate-700/50 flex items-center justify-between gap-3">
+                            <div class="flex gap-1">
+                                <button onclick="interact('${event.id}', 'like', this)" class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-slate-400 hover:bg-green-100 hover:text-green-600 transition" title="Beğen">👍</button>
+                                <button onclick="interact('${event.id}', 'dislike', this)" class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-slate-400 hover:bg-red-100 hover:text-red-600 transition" title="İlgilenmiyorum">👎</button>
+                                <button onclick="addToCalendar('${event.id}', this)" class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-indigo-500 hover:bg-indigo-100 hover:text-indigo-700 transition" title="Takvime Ekle">📅</button>
+                            </div>
+                            
+                            <a href="${ticketUrl}" target="_blank"
+                                class="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-center py-2.5 rounded-xl text-sm font-bold hover:scale-105 transition shadow-lg hover:shadow-indigo-500/20">
+                                Bilet Al
+                            </a>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+                shownCount++;
+            });
+
+            if (shownCount === 0) {
+                const noEvents = document.getElementById('no-events');
+                if (noEvents) noEvents.classList.remove('hidden');
+            }
+
+        } catch (err) {
+            console.error("Events error:", err);
+            const loader = document.getElementById('events-loader');
+            if (loader) loader.innerHTML = `<p class="text-red-500">Etkinlikler yüklenirken hata oluştu.</p>`;
+        }
+    }
+
+    async function interact(eventId, action, btn) {
+        // Visual feedback
+        if (btn) {
+            // Remove previous scaling if any
+            btn.classList.remove('scale-100');
+
+            // Add momentary bounce
+            btn.classList.add('scale-125', 'transition-all', 'duration-300');
+            setTimeout(() => btn.classList.remove('scale-125'), 300);
+
+            // Add persistent Glow & Color
+            if (action === 'like') {
+                btn.classList.add('bg-green-500', 'text-white', 'border-green-500', 'ring-4', 'ring-green-200', 'shadow-[0_0_15px_rgba(34,197,94,0.6)]');
+                btn.classList.remove('bg-white', 'hover:bg-green-50', 'text-slate-400');
+
+                // Find sibling dislike button and reset it if needed (optional but good UX)
+                const sibling = btn.parentElement.querySelector('button[onclick*="dislike"]');
+                if (sibling && sibling !== btn) {
+                    sibling.classList.remove('bg-red-500', 'text-white', 'border-red-500', 'ring-4', 'ring-red-200', 'shadow-[0_0_15px_rgba(239,68,68,0.6)]');
+                    sibling.classList.add('text-slate-400'); // Reset to default style if needed (simplified)
+                }
+
+            } else if (action === 'dislike') {
+                btn.classList.add('bg-red-500', 'text-white', 'border-red-500', 'ring-4', 'ring-red-200', 'shadow-[0_0_15px_rgba(239,68,68,0.6)]');
+                btn.classList.remove('bg-white', 'hover:bg-red-50', 'text-slate-400');
+
+                // Reset sibling like button
+                const sibling = btn.parentElement.querySelector('button[onclick*="like"]');
+                if (sibling && sibling !== btn) {
+                    sibling.classList.remove('bg-green-500', 'text-white', 'border-green-500', 'ring-4', 'ring-green-200', 'shadow-[0_0_15px_rgba(34,197,94,0.6)]');
+                    sibling.classList.add('text-slate-400');
+                }
+            }
+        }
+
+        try {
+            await fetch('/api/interact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event_id: eventId, action: action })
+            });
+            console.log(`Interacted: ${action}`);
+        } catch (e) {
+            console.error("Interaction failed", e);
+        }
+    }
+
+    async function addToCalendar(eventId, btn) {
+        // console.log("Adding event:", eventId);
+        if (btn) {
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '⏳';
+
+            try {
+                const res = await fetch('/api/calendar/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_id: eventId })
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    btn.innerHTML = '✅';
+                    btn.classList.add('bg-green-100', 'text-green-600');
+                } else if (data.status === 'exists') {
+                    btn.innerHTML = '📅';
+                    alert('Bu etkinlik zaten takviminde.');
+                } else {
+                    btn.innerHTML = '❌';
+                }
+            } catch (e) {
+                btn.innerHTML = '❌';
+            }
+
+            setTimeout(() => {
+                btn.disabled = false;
+                if (!btn.innerHTML.includes('✅')) btn.innerHTML = '📅';
+            }, 3000);
+        }
+    }
+
+    function openReasonModal() {
+        document.getElementById('ai-modal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    function closeReasonModal() {
+        document.getElementById('ai-modal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-black text-primary tracking-tight font-display">
+            Etkinlikleri Keşfet
+        </h1>
+        <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-500 font-medium">
+            Aradığın etkinliği bulmak için aşağıdaki filtreleri kullan.
+        </p>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div
+        class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-10 sticky top-20 z-40 backdrop-blur-xl bg-white/95">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <!-- Search -->
+            <div class="md:col-span-4 relative">
+                <input type="text" id="search-input" placeholder="Etkinlik, sanatçı veya mekan ara..."
+                    class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition bg-gray-50 focus:bg-white text-gray-900 placeholder-gray-400">
+                <span class="absolute left-4 top-4 text-gray-400 text-lg">🔍</span>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="md:col-span-3">
+                <div class="relative">
+                    <select id="category-filter"
+                        class="w-full py-3.5 pl-11 pr-10 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-gray-50 focus:bg-white appearance-none cursor-pointer text-gray-700">
+                        <option value="">Tüm Kategoriler</option>
+                        <option value="konser">🎵 Konser</option>
+                        <option value="tiyatro">🎭 Tiyatro</option>
+                        <option value="sinema">🎬 Sinema</option>
+                        <option value="festival">🎪 Festival</option>
+                        <option value="spor">⚽ Spor</option>
+                        <option value="sanat">🎨 Sanat / Sergi</option>
+                        <option value="egitim">🎓 Eğitim / Atölye</option>
+                    </select>
+                    <span class="absolute left-4 top-4 text-gray-500">📂</span>
+                    <span class="absolute right-4 top-4 text-gray-400 pointer-events-none">▼</span>
+                </div>
+            </div>
+
+            <!-- Date Filter -->
+            <div class="md:col-span-3">
+                <div class="relative">
+                    <select id="date-filter"
+                        class="w-full py-3.5 pl-11 pr-10 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-gray-50 focus:bg-white appearance-none cursor-pointer text-gray-700">
+                        <option value="">Tüm Tarihler</option>
+                        <option value="today">Bugün</option>
+                        <option value="tomorrow">Yarın</option>
+                        <option value="weekend">Bu Hafta Sonu</option>
+                        <option value="week">Bu Hafta</option>
+                        <option value="month">Bu Ay</option>
+                    </select>
+                    <span class="absolute left-4 top-4 text-gray-500">📅</span>
+                    <span class="absolute right-4 top-4 text-gray-400 pointer-events-none">▼</span>
+                </div>
+            </div>
+
+            <!-- Sort Filter -->
+            <div class="md:col-span-2">
+                <div class="relative">
+                    <select id="sort-filter"
+                        class="w-full py-3.5 pl-11 pr-10 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-gray-50 focus:bg-white appearance-none cursor-pointer text-gray-700">
+                        <option value="date-asc">Tarih (Yakın)</option>
+                        <option value="date-desc">Tarih (Uzak)</option>
+                    </select>
+                    <span class="absolute left-4 top-4 text-gray-500">🔃</span>
+                    <span class="absolute right-4 top-4 text-gray-400 pointer-events-none">▼</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Tags -->
+        <div class="mt-4 flex flex-wrap gap-2">
+            <button onclick="setQuickFilter('weekend')"
+                class="text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full transition">#HaftaSonu</button>
+            <button onclick="setQuickFilter('today')"
+                class="text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full transition">#Bugün</button>
+        </div>
+    </div>
+
+    <!-- Events Grid -->
+    <div id="explore-loader" class="text-center py-20">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
+        <p class="mt-4 text-gray-400 font-medium">Etkinlikler yükleniyor...</p>
+    </div>
+
+    <div id="events-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Cards injected by JS -->
+    </div>
+
+    <div id="no-results" class="hidden flex flex-col items-center justify-center py-20 text-center">
+        <div class="bg-gray-50 p-6 rounded-full mb-4">
+            <span class="text-4xl">🤔</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900">Sonuç Bulunamadı</h3>
+        <p class="text-gray-500 mt-2 max-w-sm mx-auto">Aradığın kriterlere uygun etkinlik yok. Filtreleri temizleyip
+            tekrar dene.</p>
+        <button onclick="clearFilters()" class="mt-6 text-primary font-medium hover:underline">Filtreleri
+            Temizle</button>
+    </div>
+
+</div>
+
+<script>
+    let allEvents = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchEvents();
+
+        // Listeners
+        // Search & Sort & Date can stay client-side filtering on the fetched batch (or we could make them server side too, but let's keep it simple)
+        // actually Search is best client side for responsiveness.
+        document.getElementById('search-input').addEventListener('input', applyFilters);
+        document.getElementById('date-filter').addEventListener('change', applyFilters);
+        document.getElementById('sort-filter').addEventListener('change', applyFilters);
+
+        // CRITICAL: Category change must re-fetch from server to get specific API results (Direct API Mode)
+        document.getElementById('category-filter').addEventListener('change', () => {
+            fetchEvents();
+        });
+    });
+
+    function setQuickFilter(type) {
+        if (type === 'today') {
+            document.getElementById('date-filter').value = 'today';
+        } else if (type === 'weekend') {
+            document.getElementById('date-filter').value = 'weekend';
+        }
+        applyFilters();
+    }
+
+    function clearFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('category-filter').value = '';
+        document.getElementById('date-filter').value = '';
+        document.getElementById('sort-filter').value = 'date-asc';
+        fetchEvents(); // Reload all
+    }
+
+    async function fetchEvents() {
+        document.getElementById('explore-loader').classList.remove('hidden');
+        document.getElementById('events-grid').innerHTML = '';
+
+        const cat = document.getElementById('category-filter').value;
+        let url = '/api/events?scope=all';
+        if (cat) url += `&category=${cat}`;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            allEvents = Array.isArray(data) ? data : (data.items || []);
+
+            document.getElementById('explore-loader').classList.add('hidden');
+            applyFilters(); // Re-apply other filters (search/date)
+        } catch (e) {
+            console.error(e);
+            document.getElementById('explore-loader').classList.add('hidden');
+            document.getElementById('explore-loader').innerHTML = '<p class="text-red-500">Veri alınamadı.</p>';
+        }
+    }
+
+    function parseEventDate(dateStr) {
+        if (!dateStr) return null;
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    function applyFilters() {
+        const query = document.getElementById('search-input').value.toLocaleLowerCase('tr-TR');
+        const category = document.getElementById('category-filter').value.toLowerCase();
+        const dateFilter = document.getElementById('date-filter').value;
+        const sort = document.getElementById('sort-filter').value;
+
+        // Date Helpers
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // 00:00 today
+        const tmrwStart = new Date(todayStart); tmrwStart.setDate(tmrwStart.getDate() + 1);
+        const tmrwEnd = new Date(tmrwStart); tmrwEnd.setDate(tmrwEnd.getDate() + 1);
+
+        // Weekend Logic
+        // Friday=5, Saturday=6, Sunday=0
+        const dayOfWeek = todayStart.getDay();
+
+        let weekendStart = new Date(todayStart);
+        if (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) {
+            weekendStart = new Date(todayStart);
+        } else {
+            const distToFri = (5 - dayOfWeek + 7) % 7;
+            weekendStart.setDate(weekendStart.getDate() + distToFri);
+        }
+
+        const weekendEnd = new Date(weekendStart);
+        const startDay = weekendStart.getDay();
+        let daysToAdd = 0;
+        if (startDay === 5) daysToAdd = 3;
+        else if (startDay === 6) daysToAdd = 2;
+        else if (startDay === 0) daysToAdd = 1;
+
+        weekendEnd.setDate(weekendEnd.getDate() + daysToAdd);
+
+
+        let filtered = allEvents.filter(event => {
+            // Robust Text Search
+            const name = event.name ? event.name.toLocaleLowerCase('tr-TR') : '';
+            const venueName = (event.venue && event.venue.name) ? event.venue.name.toLocaleLowerCase('tr-TR') : '';
+            const desc = (event.content) ? event.content.toLocaleLowerCase('tr-TR') : '';
+
+            const matchText = name.includes(query) || venueName.includes(query) || desc.includes(query);
+
+            // Robust Category Matching
+            let matchCat = true;
+            if (category) {
+                const eventCatName = (event.category && event.category.name) ? event.category.name.toLocaleLowerCase('tr-TR') : '';
+                const eventCatSlug = (event.category && event.category.slug) ? event.category.slug.toLowerCase() : '';
+
+                if (category === 'sinema') {
+                    matchCat = eventCatName.includes('sinema') || eventCatName.includes('film') || name.includes('film') || eventCatSlug.includes('sinema');
+                } else if (category === 'tiyatro') {
+                    matchCat = eventCatName.includes('tiyatro') || eventCatName.includes('sahne') || name.includes('oyun') || eventCatSlug.includes('tiyatro');
+                } else if (category === 'konser') {
+                    matchCat = eventCatName.includes('konser') || eventCatName.includes('müzik') || eventCatSlug.includes('konser');
+                } else {
+                    matchCat = eventCatName.includes(category) || name.includes(category) || eventCatSlug.includes(category);
+                }
+            }
+
+            // Date Filtering
+            let matchDate = true;
+            if (dateFilter) {
+                const eDate = parseEventDate(event.start);
+
+                if (!eDate) {
+                    matchDate = false;
+                } else {
+                    if (dateFilter === 'today') {
+                        matchDate = (eDate >= todayStart && eDate < tmrwStart);
+                    } else if (dateFilter === 'tomorrow') {
+                        matchDate = (eDate >= tmrwStart && eDate < tmrwEnd);
+                    } else if (dateFilter === 'weekend') {
+                        matchDate = (eDate >= weekendStart && eDate < weekendEnd);
+                    } else if (dateFilter === 'week') {
+                        const nextWeek = new Date(todayStart); nextWeek.setDate(nextWeek.getDate() + 7);
+                        matchDate = (eDate >= todayStart && eDate < nextWeek);
+                    } else if (dateFilter === 'month') {
+                        const nextMonth = new Date(todayStart); nextMonth.setMonth(nextMonth.getMonth() + 1);
+                        matchDate = (eDate >= todayStart && eDate < nextMonth);
+                    }
+                }
+            }
+
+            return matchText && matchCat && matchDate;
+        });
+
+        // Sorting Logic
+        filtered.sort((a, b) => {
+            const dateA = a.start ? new Date(a.start) : new Date(8640000000000000);
+            const dateB = b.start ? new Date(b.start) : new Date(8640000000000000);
+
+            if (sort === 'date-asc') return dateA - dateB;
+            if (sort === 'date-desc') return dateB - dateA;
+        });
+
+        renderEvents(filtered);
+    }
+
+    function renderEvents(events) {
+        const grid = document.getElementById('events-grid');
+        grid.innerHTML = '';
+
+        if (events.length === 0) {
+            document.getElementById('no-results').classList.remove('hidden');
+            return;
+        } else {
+            document.getElementById('no-results').classList.add('hidden');
+        }
+
+        events.forEach(event => {
+            const card = document.createElement('div');
+            // Clean, softer UI style
+            card.className = "bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden border border-slate-100 flex flex-col group h-full";
+
+            const imageUrl = event.poster_url || event.image || 'https://images.unsplash.com/photo-1459749411177-0473ef71607b?auto=format&fit=crop&w=500&q=60';
+
+            // Date formatting
+            let dateBadge = 'Tarih Yok';
+            if (event.start) {
+                const d = new Date(event.start);
+                if (!isNaN(d.getTime())) {
+                    dateBadge = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+                }
+            }
+
+            const ticketUrl = event.ticket_url || event.url || '#';
+            const catName = (event.category && event.category.name) ? event.category.name : 'Etkinlik';
+            const venueName = (event.venue && event.venue.name) ? event.venue.name : 'Mekan bilgisi yok';
+
+            card.innerHTML = `
+                <div class="h-56 overflow-hidden bg-gray-100 relative">
+                    <img src="${imageUrl}" loading="lazy" alt="${event.name}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+                    <div class="absolute top-4 right-4 bg-white/95 backdrop-blur-md text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm text-primary border border-white/50">
+                        ${catName}
+                    </div>
+                </div>
+                <div class="p-6 flex-grow flex flex-col justify-between">
+                    <div>
+                         <div class="flex items-center gap-2 mb-3">
+                            <span class="bg-indigo-50 text-primary px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                                📅 ${dateBadge}
+                            </span>
+                        </div>
+                        <h3 class="text-xl font-black text-slate-900 mb-3 leading-tight line-clamp-2 group-hover:text-secondary transition-colors font-display">
+                            ${event.name}
+                        </h3>
+                        <p class="text-slate-500 text-sm mb-6 line-clamp-2 flex items-center font-medium">
+                             <span class="mr-1 text-secondary">📍</span> ${venueName}
+                        </p>
+                    </div>
+                    
+                    <div class="mt-auto pt-5 border-t border-slate-50 flex items-center justify-end">
+                        <div class="flex gap-2 items-center">
+                            <!-- Interactions -->
+                             <button onclick="interact('${event.id}', 'like', this)" class="bg-slate-50 text-slate-400 hover:text-green-600 hover:bg-green-50 p-3 rounded-xl transition border border-slate-100" title="Beğen">👍</button>
+                             <button onclick="interact('${event.id}', 'dislike', this)" class="bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 p-3 rounded-xl transition border border-slate-100" title="İlgilenmiyorum">👎</button>
+
+                             <!-- Actions -->
+                             <button onclick="addToCalendar('${event.id}', this)" class="bg-indigo-50 text-indigo-600 p-3 rounded-xl hover:bg-indigo-100 transition mr-2" title="Takvime Ekle">📅</button>
+
+                             <a href="/community?event_name=${encodeURIComponent(event.name)}&event_id=${event.id}" 
+                                class="bg-indigo-50 text-primary p-3 rounded-xl hover:bg-indigo-100 transition"
+                                title="Toplulukta Paylaş">
+                                📢
+                            </a>
+                            <a href="${ticketUrl}" target="_blank"
+                                class="bg-gradient-to-r from-primary to-indigo-800 text-white text-sm font-bold px-6 py-3 rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 transition transform hover:-translate-y-0.5">
+                                Bilet Al
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    async function interact(eventId, action, btn) {
+        if (btn) {
+            btn.classList.add('scale-125', action === 'like' ? 'bg-green-200' : 'bg-red-200');
+            setTimeout(() => btn.classList.remove('scale-125'), 200);
+        }
+        try {
+            await fetch('/api/interact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event_id: eventId, action: action })
+            });
+        } catch (e) { console.error(e); }
+    }
+    async function addToCalendar(eventId, btn) {
+        if (btn) {
+            const original = btn.innerHTML;
+            btn.innerHTML = '⏳';
+            try {
+                const res = await fetch('/api/calendar/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_id: eventId })
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    btn.innerHTML = '✅';
+                    btn.classList.add('bg-green-100', 'text-green-600');
+                } else if (data.status === 'exists') {
+                    btn.innerHTML = '📅';
+                    alert('Zaten takvimde.');
+                }
+            } catch (e) {
+                console.error(e);
+                btn.innerHTML = '❌';
+            }
+            setTimeout(() => {
+                if (!btn.innerHTML.includes('✅')) btn.innerHTML = '📅';
+            }, 2000);
+        }
+    }
+</script>
+{% endblock %}
+```

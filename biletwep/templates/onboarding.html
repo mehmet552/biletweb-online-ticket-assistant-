@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+            Seni Daha Yakından Tanıyalım
+        </h2>
+        <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+            Sana en uygun etkinlikleri önerebilmemiz için birkaç soru.
+        </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-lg">
+        <div
+            class="bg-white dark:bg-slate-800 py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-200 dark:border-slate-700">
+            <form class="space-y-6" action="/onboarding" method="POST">
+
+                <!-- Budget Removed -->
+
+                <!-- Frequency -->
+                <div>
+                    <label for="frequency" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ne
+                        Sıklıkla Etkinliğe
+                        Katılırsın?</label>
+                    <select id="frequency" name="frequency"
+                        class="mt-1 block w-full pl-3 pr-10 py-3 text-base border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white">
+                        <option value="weekly">Haftada Bir</option>
+                        <option value="biweekly">İki Haftada Bir</option>
+                        <option value="monthly">Ayda Bir</option>
+                        <option value="rarely">Nadir</option>
+                    </select>
+                </div>
+
+                <!-- Interests -->
+                <div>
+                    <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">İlgi Alanların</span>
+                    <div class="grid grid-cols-2 gap-4">
+                        {% for interest in [('konser', 'Konser 🎵'), ('tiyatro', 'Tiyatro 🎭'), ('sinema', 'Sinema 🎬'),
+                        ('festival', 'Festival 🎪'), ('spor', 'Spor ⚽'), ('sanat', 'Sanat 🎨'), ('atolye', 'Atölye
+                        🛠️')] %}
+                        <label
+                            class="relative flex flex-col bg-white dark:bg-slate-700 p-4 rounded-lg shadow-sm cursor-pointer border dark:border-slate-600 hover:border-primary transition group">
+                            <input type="checkbox" name="interests" value="{{ interest[0] }}" class="peer sr-only">
+                            <span class="font-semibold text-gray-900 dark:text-white">{{ interest[1] }}</span>
+                            <span
+                                class="absolute inset-0 border-2 border-primary rounded-lg hidden peer-checked:block pointer-events-none"></span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit"
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition">
+                        Kaydet ve Keşfet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

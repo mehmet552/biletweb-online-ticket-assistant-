@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 md:px-8 py-8">
+
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 dark:text-white font-display">
+                Bildirimler
+            </h1>
+            <p class="text-slate-500 dark:text-slate-400 mt-2">
+                Topluluk veya etkinliklerle ilgili güncellemeler.
+            </p>
+        </div>
+        <button onclick="markAllRead()" class="text-sm font-bold text-primary dark:text-indigo-400 hover:underline">
+            Tümünü Okundu İşaretle
+        </button>
+    </div>
+
+    <div class="space-y-4">
+        {% for notif in notifications %}
+        <div data-link="{{ notif.link }}" data-id="{{ notif.id }}" onclick="handleClick(this)"
+            class="relative group cursor-pointer p-4 rounded-2xl border transition-all duration-300
+                    {{ 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md' if notif.is_read else 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 shadow-md' }}">
+
+            {% if not notif.is_read %}
+            <span class="absolute top-4 right-4 h-3 w-3 rounded-full bg-secondary animate-pulse"></span>
+            {% endif %}
+
+            <div class="flex items-start gap-4">
+                <div
+                    class="p-3 rounded-full {{ 'bg-slate-100 dark:bg-slate-700 text-slate-500' if notif.is_read else 'bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300' }}">
+                    <span class="text-xl">🔔</span>
+                </div>
+                <div>
+                    <p
+                        class="text-slate-800 dark:text-slate-200 font-medium {{ 'font-bold' if not notif.is_read else '' }}">
+                        {{ notif.message }}
+                    </p>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                        {{ notif.created_at[:16] }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <span class="text-4xl block mb-4">🔕</span>
+            <p class="text-slate-500 dark:text-slate-400 text-lg">Henüz bir bildiriminiz yok.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<script>
+    async function handleClick(element) {
+        const link = element.dataset.link;
+        const id = element.dataset.id;
+
+        // Mark as read
+        try {
+            await fetch(`/api/notifications/read/${id}`, { method: 'POST' });
+        } catch (e) { console.error(e); }
+
+        // Navigate
+        if (link && link !== 'None') window.location.href = link;
+        else window.location.reload();
+    }
+
+    async function markAllRead() {
+        if (confirm('Tüm bildirimler okundu olarak işaretlensin mi?')) {
+            await fetch('/api/notifications/clear', { method: 'POST' });
+            window.location.reload();
+        }
+    }
+</script>
+{% endblock %}
