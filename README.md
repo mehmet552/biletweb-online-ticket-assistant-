@@ -1,6 +1,6 @@
 # biletweb-online-ticket-assistant-
 BiletWep: Yapay zeka destekli, kişiselleştirilmiş etkinlik keşif ve topluluk platformu. Şehrindeki en iyi konser, tiyatro ve filmleri keşfet, yapay zeka küratörü ile sana özel "Şanslı İkili" önerileri al! 🚀🎬🎭
-
+etkinlikler sadece istanbulla sınırlandırılmıştır
 # BiletWep Teknik Dokümantasyonu
 
 **BiletWep**, kullanıcıların şehirdeki etkinlikleri keşfetmesini, ilgi alanlarına göre kişiselleştirilmiş öneriler almasını ve toplulukla etkileşime geçmesini sağlayan yapay zeka destekli bir web platformudur.
